@@ -4,7 +4,8 @@ import SockJS from 'sockjs-client';
 import type { OrderBookSnapshot } from '../types';
 
 const EMPTY: OrderBookSnapshot = { bids: [], asks: [] };
-const WS_URL = 'http://localhost:8080/ws';
+// 상대 경로 → dev는 vite 프록시, prod는 동일 오리진으로 백엔드 연결
+const WS_URL = '/ws';
 
 export function useOrderBook() {
   const [snapshot, setSnapshot] = useState<OrderBookSnapshot>(EMPTY);

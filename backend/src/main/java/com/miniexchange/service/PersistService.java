@@ -1,8 +1,6 @@
 package com.miniexchange.service;
 
 import com.miniexchange.domain.Execution;
-import com.miniexchange.domain.Order;
-import com.miniexchange.domain.OrderSide;
 import com.miniexchange.engine.MatchResult;
 import com.miniexchange.repository.ExecutionRepository;
 import com.miniexchange.repository.OrderRepository;
@@ -34,12 +32,9 @@ public class PersistService {
     @Transactional
     public void save(List<MatchResult> results) {
         for (MatchResult r : results) {
-            Order buyer  = r.takerOrder().getSide() == OrderSide.BUY  ? r.takerOrder() : r.makerOrder();
-            Order seller = r.takerOrder().getSide() == OrderSide.SELL ? r.takerOrder() : r.makerOrder();
-
             executionRepository.save(Execution.builder()
-                    .buyOrder(buyer)
-                    .sellOrder(seller)
+                    .buyOrder(r.buyOrder())
+                    .sellOrder(r.sellOrder())
                     .price(r.price())
                     .quantity(r.quantity())
                     .executedAt(LocalDateTime.now())

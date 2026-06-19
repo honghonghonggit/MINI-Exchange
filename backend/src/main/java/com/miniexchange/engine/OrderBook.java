@@ -60,21 +60,18 @@ public class OrderBook {
      * 매칭 스레드에서만 호출되므로 추가 동기화 불필요.
      */
     public OrderBookSnapshot snapshot() {
-        List<OrderBookSnapshot.PriceLevel> bidLevels = bids.entrySet().stream()
+        return new OrderBookSnapshot(toPriceLevels(bids), toPriceLevels(asks));
+    }
+
+    /** TreeMap의 각 가격 레벨을 (가격, 잔량 합계, 주문 수) PriceLevel로 변환한다. */
+    private static List<OrderBookSnapshot.PriceLevel> toPriceLevels(
+            TreeMap<Long, ArrayDeque<Order>> book) {
+        return book.entrySet().stream()
                 .map(e -> new OrderBookSnapshot.PriceLevel(
                         e.getKey(),
                         e.getValue().stream().mapToLong(Order::getRemainingQuantity).sum(),
                         e.getValue().size()))
                 .toList();
-
-        List<OrderBookSnapshot.PriceLevel> askLevels = asks.entrySet().stream()
-                .map(e -> new OrderBookSnapshot.PriceLevel(
-                        e.getKey(),
-                        e.getValue().stream().mapToLong(Order::getRemainingQuantity).sum(),
-                        e.getValue().size()))
-                .toList();
-
-        return new OrderBookSnapshot(bidLevels, askLevels);
     }
 
     // --- 테스트용 접근자 ---
