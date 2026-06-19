@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import type { Trade } from '../types';
+import { useStompSubscription } from '../ws/StompProvider';
 import './PriceChart.css';
 
 interface PricePoint { time: string; price: number; }
@@ -12,27 +11,14 @@ const MAX_POINTS = 60;
 export function PriceChart() {
   const [data, setData] = useState<PricePoint[]>([]);
 
-  useEffect(() => {
-    const client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
-      reconnectDelay: 3000,
-      onConnect: () => {
-        client.subscribe('/topic/trades', (msg) => {
-          const trades: Trade[] = JSON.parse(msg.body);
-          if (trades.length === 0) return;
-          const latest = trades[0];
-          const point: PricePoint = {
-            time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            price: latest.price,
-          };
-          setData(prev => [...prev, point].slice(-MAX_POINTS));
-        });
-      },
-    });
-
-    client.activate();
-    return () => { client.deactivate(); };
-  }, []);
+  useStompSubscription<Trade[]>('/topic/trades', (trades) => {
+    if (trades.length === 0) return;
+    const point: PricePoint = {
+      time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      price: trades[0].price,
+    };
+    setData(prev => [...prev, point].slice(-MAX_POINTS));
+  });
 
   const prices = data.map(d => d.price);
   const minPrice = prices.length ? Math.min(...prices) * 0.999 : 0;
