@@ -1,0 +1,68 @@
+.ob-container {
+  width: 320px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.ob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+}
+
+.ob-title {
+  color: #e0e0e0;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.ob-status {
+  font-size: 11px;
+}
+.ob-status.connected    { color: #4ade80; }
+.ob-status.disconnected { color: #9ca3af; }
+
+.ob-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ob-table thead th {
+  padding: 6px 12px;
+  color: #6b7280;
+  font-weight: normal;
+  font-size: 11px;
+  text-align: right;
+  background: #16213e;
+}
+.ob-table thead th:last-child { text-align: center; }
+
+.ob-table td {
+  padding: 4px 12px;
+  text-align: right;
+}
+
+.ask-row { background: rgba(239, 68, 68, 0.06); }
+.bid-row { background: rgba(34, 197, 94, 0.06); }
+
+.ask-price { color: #ef4444; font-weight: 600; }
+.bid-price { color: #22c55e; font-weight: 600; }
+
+.qty { color: #d1d5db; }
+.cnt { color: #6b7280; text-align: center; }
+
+.spread-row td {
+  text-align: center;
+  padding: 6px;
+  color: #9ca3af;
+  font-size: 11px;
+  background: #16213e;
+  border-top: 1px solid #0f3460;
+  border-bottom: 1px solid #0f3460;
+}
