@@ -21,10 +21,12 @@ class MatchingEngineTest {
         List<MatchResult> captured = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        MatchingEngine engine = new MatchingEngine(results -> {
-            captured.addAll(results);
-            latch.countDown();
-        });
+        MatchingEngine engine = new MatchingEngine(
+                snapshot -> {},   // WS 브로드캐스트 무시
+                results -> {
+                    captured.addAll(results);
+                    latch.countDown();
+                });
 
         engine.submit(limitSell(50_000L, 10));
         engine.submit(limitBuy(50_000L, 10));
@@ -38,9 +40,9 @@ class MatchingEngineTest {
     }
 
     @Test
-    void noMatch_callbackNotFired() throws InterruptedException {
+    void noMatch_matchCallbackNotFired() throws InterruptedException {
         List<MatchResult> captured = new ArrayList<>();
-        MatchingEngine engine = new MatchingEngine(captured::addAll);
+        MatchingEngine engine = new MatchingEngine(snapshot -> {}, captured::addAll);
 
         engine.submit(limitSell(51_000L, 10));
         engine.submit(limitBuy(50_000L, 10));
@@ -52,13 +54,31 @@ class MatchingEngineTest {
     }
 
     @Test
-    void snapshot_reflectsBookStateAfterSubmit() throws InterruptedException {
-        MatchingEngine engine = new MatchingEngine(results -> {});
+    void onOrderBookChanged_firedAfterEveryCommand() throws InterruptedException {
+        List<OrderBookSnapshot> snapshots = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
+
+        MatchingEngine engine = new MatchingEngine(
+                snapshot -> { snapshots.add(snapshot); latch.countDown(); },
+                results -> {});
 
         engine.submit(limitBuy(50_000L, 5));
         engine.submit(limitSell(51_000L, 5));
 
-        Thread.sleep(200); // 매칭 스레드가 처리할 시간
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(snapshots).hasSize(2);
+
+        engine.stop();
+    }
+
+    @Test
+    void snapshot_reflectsBookStateAfterSubmit() throws InterruptedException {
+        MatchingEngine engine = new MatchingEngine(snapshot -> {}, results -> {});
+
+        engine.submit(limitBuy(50_000L, 5));
+        engine.submit(limitSell(51_000L, 5));
+
+        Thread.sleep(200);
 
         OrderBookSnapshot snap = engine.snapshot();
         assertThat(snap.bids()).hasSize(1);
@@ -74,32 +94,22 @@ class MatchingEngineTest {
     private Order limitBuy(long price, long qty) {
         long id = idSeq.getAndIncrement();
         return Order.builder()
-                .id(id)
-                .clientOrderId("me-" + id)
-                .side(OrderSide.BUY)
-                .type(OrderType.LIMIT)
-                .price(price)
-                .quantity(qty)
-                .remainingQuantity(qty)
+                .id(id).clientOrderId("me-" + id)
+                .side(OrderSide.BUY).type(OrderType.LIMIT)
+                .price(price).quantity(qty).remainingQuantity(qty)
                 .status(OrderStatus.OPEN)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
                 .build();
     }
 
     private Order limitSell(long price, long qty) {
         long id = idSeq.getAndIncrement();
         return Order.builder()
-                .id(id)
-                .clientOrderId("me-" + id)
-                .side(OrderSide.SELL)
-                .type(OrderType.LIMIT)
-                .price(price)
-                .quantity(qty)
-                .remainingQuantity(qty)
+                .id(id).clientOrderId("me-" + id)
+                .side(OrderSide.SELL).type(OrderType.LIMIT)
+                .price(price).quantity(qty).remainingQuantity(qty)
                 .status(OrderStatus.OPEN)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
                 .build();
     }
 }
