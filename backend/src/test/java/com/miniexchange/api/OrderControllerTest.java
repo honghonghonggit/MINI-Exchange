@@ -2,12 +2,14 @@ package com.miniexchange.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.miniexchange.api.dto.OrderRequest;
+import com.miniexchange.api.dto.TradeResponse;
 import com.miniexchange.domain.Order;
 import com.miniexchange.domain.OrderSide;
 import com.miniexchange.domain.OrderStatus;
 import com.miniexchange.domain.OrderType;
 import com.miniexchange.engine.OrderBookSnapshot;
 import com.miniexchange.service.OrderService;
+import com.miniexchange.service.TradeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -29,6 +31,7 @@ class OrderControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean OrderService orderService;
+    @MockBean TradeService tradeService;
 
     @Test
     void postOrder_validRequest_returns201() throws Exception {
@@ -51,7 +54,6 @@ class OrderControllerTest {
 
     @Test
     void postOrder_invalidRequest_returns400() throws Exception {
-        // quantity = 0 → validation 실패
         String body = """
                 {"side":"BUY","type":"LIMIT","price":50000,"quantity":0}
                 """;
@@ -88,5 +90,17 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.bids[0].price").value(50000))
                 .andExpect(jsonPath("$.asks[0].price").value(51000));
+    }
+
+    @Test
+    void getTrades_returnsList() throws Exception {
+        List<TradeResponse> trades = List.of(
+                new TradeResponse(1L, 50_000L, 5L, LocalDateTime.now()));
+        when(tradeService.getRecentTrades()).thenReturn(trades);
+
+        mockMvc.perform(get("/trades"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].price").value(50000))
+                .andExpect(jsonPath("$[0].quantity").value(5));
     }
 }

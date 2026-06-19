@@ -133,7 +133,51 @@ orders와 executions를 합치면 단순해지지만, "이 주문이 몇 번에 
 
 ## 실행 방법
 
-*(스캐폴딩 완료 후 채울 예정)*
+### 1. Docker Compose (권장)
+
+PostgreSQL + 백엔드를 한 번에 실행합니다.
+
+```bash
+# 백엔드 빌드 후 컨테이너 실행
+cd backend
+./gradlew bootJar
+cd ..
+docker-compose up --build
+```
+
+프론트엔드는 별도로 실행합니다.
+
+```bash
+cd frontend
+npm install
+npm run dev
+# http://localhost:5173 에서 확인
+```
+
+### 2. 로컬 개발 (H2 인메모리)
+
+PostgreSQL 없이 H2로 바로 실행합니다.
+
+```bash
+# 백엔드 (포트 8080, H2 자동 스키마 생성)
+cd backend
+./gradlew bootRun
+
+# 프론트엔드 (포트 5173, 백엔드로 프록시)
+cd frontend
+npm install
+npm run dev
+```
+
+### 3. 테스트
+
+```bash
+cd backend
+./gradlew test
+```
+
+> **Note:** 시뮬레이터가 자동으로 랜덤 주문을 500ms 간격으로 생성합니다.  
+> 시뮬레이터를 끄려면 `application.yml`에서 `simulator.enabled: false`로 설정하세요.
 
 ---
 
@@ -144,7 +188,7 @@ orders와 executions를 합치면 단순해지지만, "이 주문이 몇 번에 
 | `POST` | `/orders` | 주문 제출 |
 | `DELETE` | `/orders/{id}` | 주문 취소 |
 | `GET` | `/orderbook` | 오더북 스냅샷 |
-| `GET` | `/trades` | 최근 체결 내역 *(Phase 2)* |
+| `GET` | `/trades` | 최근 체결 내역 (최대 50건) |
 | `GET` | `/metrics` | 매칭 레이턴시·TPS *(Phase 2)* |
 | `WS` | `/topic/orderbook` | 오더북 실시간 업데이트 |
 

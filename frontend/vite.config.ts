@@ -8,10 +8,11 @@ export default defineConfig({
     proxy: {
       '/orders':    'http://localhost:8080',
       '/orderbook': 'http://localhost:8080',
+      '/trades':    'http://localhost:8080',
       '/ws': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        ws: false,        // SockJS는 HTTP로 폴링 후 업그레이드 — ws:true 불필요
+        ws: false,
       },
     },
   },
