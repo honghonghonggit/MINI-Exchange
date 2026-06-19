@@ -2,6 +2,7 @@ package com.miniexchange.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.miniexchange.api.dto.EventLogResponse;
 import com.miniexchange.domain.EventLog;
 import com.miniexchange.domain.EventLog.EventType;
 import com.miniexchange.domain.Order;
@@ -24,6 +25,15 @@ public class EventLogService {
 
     private final EventLogRepository eventLogRepository;
     private final ObjectMapper objectMapper;
+
+    /** 최근 이벤트 로그 조회 (최대 100건, 최신순) */
+    @Transactional(readOnly = true)
+    public List<EventLogResponse> getRecentEvents() {
+        return eventLogRepository.findTop100ByOrderByTimestampDesc()
+                .stream()
+                .map(EventLogResponse::from)
+                .toList();
+    }
 
     @Async("persistExecutor")
     @Transactional

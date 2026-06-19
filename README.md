@@ -209,6 +209,7 @@ cd backend
 | `GET` | `/orderbook` | 오더북 스냅샷 |
 | `GET` | `/trades` | 최근 체결 내역 (최대 50건) |
 | `GET` | `/metrics` | 매칭 레이턴시·TPS·미체결 주문 수 |
+| `GET` | `/events` | 이벤트 로그 조회 (최대 100건, 최신순) |
 | `WS` | `/topic/orderbook` | 오더북 실시간 업데이트 |
 | `WS` | `/topic/trades` | 체결 이벤트 실시간 스트림 |
 
