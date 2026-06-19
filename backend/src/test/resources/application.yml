@@ -1,0 +1,2 @@
+simulator:
+  enabled: false   # 테스트 중 시뮬레이터 비활성화

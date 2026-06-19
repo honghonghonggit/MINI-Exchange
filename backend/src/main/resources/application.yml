@@ -18,6 +18,10 @@ spring:
     show-sql: false
     open-in-view: false
 
+simulator:
+  enabled: true
+  interval-ms: 500
+
 ---
 # prod 프로파일: PostgreSQL (배포 환경)
 spring:
