@@ -25,6 +25,7 @@ class OrderServiceTest {
 
     @Mock OrderRepository orderRepository;
     @Mock MatchingEngine matchingEngine;
+    @Mock EventLogService eventLogService;
     @InjectMocks OrderService orderService;
 
     @Test

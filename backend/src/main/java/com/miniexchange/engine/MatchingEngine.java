@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 
 /**
@@ -13,8 +15,9 @@ import java.util.function.Consumer;
  *   - 외부 스레드들은 commandQueue에 명령을 넣고 즉시 반환
  *   - matchingThread 혼자 OrderBook을 읽고 씀 → lock 없이 race condition 원천 차단
  *   - onOrderBookChanged: 매 명령 처리 후 항상 호출 → WebSocket 브로드캐스트
- *   - onMatch: 체결이 발생한 경우에만 호출 → 비동기 DB persist
+ *   - onMatch: 체결이 발생한 경우에만 호출 → 비동기 DB persist + WS 체결 이벤트
  *   - lastSnapshot: volatile + 불변 record → REST 스레드가 안전하게 읽음
+ *   - 메트릭: AtomicLong으로 레이턴시·TPS 추적 (lock-free)
  */
 @Slf4j
 public class MatchingEngine {
@@ -26,6 +29,16 @@ public class MatchingEngine {
     private final Thread matchingThread;
 
     private volatile OrderBookSnapshot lastSnapshot = new OrderBookSnapshot(List.of(), List.of());
+
+    // 메트릭 (단위: nanoseconds)
+    private final AtomicLong lastLatencyNs = new AtomicLong(0);
+    private final AtomicLong totalLatencyNs = new AtomicLong(0);
+    private final LongAdder commandCount = new LongAdder();
+
+    // TPS: 1초 슬라이딩 윈도우
+    private final LongAdder matchCountInWindow = new LongAdder();
+    private volatile long windowStartMs = System.currentTimeMillis();
+    private volatile double lastTps = 0.0;
 
     public MatchingEngine(Consumer<OrderBookSnapshot> onOrderBookChanged,
                           Consumer<List<MatchResult>> onMatch) {
@@ -44,7 +57,6 @@ public class MatchingEngine {
         commandQueue.offer(OrderCommand.cancel(orderId));
     }
 
-    /** volatile 참조 → REST 스레드에서 안전하게 읽기 가능 */
     public OrderBookSnapshot snapshot() {
         return lastSnapshot;
     }
@@ -53,28 +65,70 @@ public class MatchingEngine {
         matchingThread.interrupt();
     }
 
+    // --- 메트릭 접근자 (REST 스레드에서 읽음) ---
+
+    /** 마지막 명령 처리 레이턴시 (µs) */
+    public double lastLatencyUs() {
+        return lastLatencyNs.get() / 1_000.0;
+    }
+
+    /** 누적 평균 레이턴시 (µs) */
+    public double avgLatencyUs() {
+        long count = commandCount.sum();
+        return count == 0 ? 0.0 : totalLatencyNs.get() / 1_000.0 / count;
+    }
+
+    /** 최근 1초 체결 TPS */
+    public double tps() {
+        refreshTpsWindow();
+        return lastTps;
+    }
+
+    /** 현재 미체결 주문 수 */
+    public int openOrderCount() {
+        return orderBook.openOrderCount();
+    }
+
+    // ---
+
     private void loop() {
         log.info("Matching thread started");
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 OrderCommand cmd = commandQueue.take();
-                List<MatchResult> results = List.of();
+                long start = System.nanoTime();
 
+                List<MatchResult> results = List.of();
                 switch (cmd.type()) {
                     case SUBMIT -> results = orderBook.submit(cmd.order());
                     case CANCEL -> orderBook.cancel(cmd.cancelOrderId());
                 }
 
+                long elapsed = System.nanoTime() - start;
+                lastLatencyNs.set(elapsed);
+                totalLatencyNs.addAndGet(elapsed);
+                commandCount.increment();
+
                 lastSnapshot = orderBook.snapshot();
-                onOrderBookChanged.accept(lastSnapshot);   // 항상: WS 브로드캐스트
+                onOrderBookChanged.accept(lastSnapshot);
 
                 if (!results.isEmpty()) {
-                    onMatch.accept(results);               // 체결 시만: DB persist
+                    matchCountInWindow.add(results.size());
+                    onMatch.accept(results);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
         log.info("Matching thread stopped");
+    }
+
+    private void refreshTpsWindow() {
+        long now = System.currentTimeMillis();
+        long elapsed = now - windowStartMs;
+        if (elapsed >= 1_000) {
+            lastTps = matchCountInWindow.sumThenReset() * 1_000.0 / elapsed;
+            windowStartMs = now;
+        }
     }
 }

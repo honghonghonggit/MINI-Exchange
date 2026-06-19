@@ -74,12 +74,13 @@ public class OrderBook {
                 .toList();
     }
 
-    // --- 테스트용 접근자 ---
+    // --- 접근자 ---
 
     public int bidLevels()        { return bids.size(); }
     public int askLevels()        { return asks.size(); }
     public Long bestBidPrice()    { return bids.isEmpty() ? null : bids.firstKey(); }
     public Long bestAskPrice()    { return asks.isEmpty() ? null : asks.firstKey(); }
+    public int openOrderCount()   { return orderIndex.size(); }
 
     // --- Private 매칭 로직 ---
 

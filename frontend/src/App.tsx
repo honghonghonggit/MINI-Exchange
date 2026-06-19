@@ -1,4 +1,7 @@
 import { OrderBookPanel } from './components/OrderBookPanel';
+import { TradeTape } from './components/TradeTape';
+import { PriceChart } from './components/PriceChart';
+import { MetricsPanel } from './components/MetricsPanel';
 import './App.css';
 
 export default function App() {
@@ -9,7 +12,14 @@ export default function App() {
         <p className="disclaimer">실거래·실자금 없음 — 교육 목적 시뮬레이션</p>
       </header>
       <main className="app-main">
-        <OrderBookPanel />
+        <MetricsPanel />
+        <div className="main-row">
+          <OrderBookPanel />
+          <TradeTape />
+          <div className="main-col">
+            <PriceChart />
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -1,0 +1,16 @@
+.price-chart {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  width: 100%;
+}
+
+.chart-empty {
+  color: #6b7280;
+  font-size: 12px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -8,3 +8,16 @@ export interface OrderBookSnapshot {
   bids: PriceLevel[];
   asks: PriceLevel[];
 }
+
+export interface Trade {
+  price: number;
+  quantity: number;
+  executedAt: string;
+}
+
+export interface Metrics {
+  lastLatencyUs: number;
+  avgLatencyUs: number;
+  tps: number;
+  openOrderCount: number;
+}

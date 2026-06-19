@@ -1,0 +1,54 @@
+.trade-tape {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  width: 220px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tape-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b7280;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid #21262d;
+  margin-bottom: 4px;
+}
+
+.tape-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tape-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  animation: fadeIn 0.3s ease;
+}
+
+.tape-price {
+  color: #e6edf3;
+}
+
+.tape-qty {
+  color: #8b949e;
+}
+
+.tape-empty {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
