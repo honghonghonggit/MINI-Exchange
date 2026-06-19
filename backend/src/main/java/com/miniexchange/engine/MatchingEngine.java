@@ -89,6 +89,11 @@ public class MatchingEngine {
         return orderBook.openOrderCount();
     }
 
+    /** 매칭 스레드가 지금까지 처리 완료한 명령 수 (큐 소진 판정용) */
+    public long processedCommandCount() {
+        return commandCount.sum();
+    }
+
     // ---
 
     private void loop() {
