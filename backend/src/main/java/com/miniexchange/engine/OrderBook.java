@@ -39,6 +39,41 @@ public class OrderBook {
     }
 
     /**
+     * 매칭 없이 주문을 book에 안착시킨다 (VI 정지 중 사용). LIMIT 전용.
+     */
+    public void rest(Order order) {
+        enqueue(order);
+    }
+
+    /**
+     * 교차 상태인 주문들을 모두 체결한다 (VI 해제 시 일괄 체결).
+     * 정지 중 매칭 없이 쌓인 주문들로 best bid >= best ask가 된 상태를 해소한다.
+     * best bid 주문을 하나씩 공격자(taker)로 꺼내 반대편과 matchLimit으로 체결,
+     * 잔량이 남으면 다시 안착. 더 이상 교차가 없으면 종료(정상 종료 보장).
+     */
+    public List<MatchResult> uncross() {
+        List<MatchResult> all = new ArrayList<>();
+        while (bestBidPrice() != null && bestAskPrice() != null
+                && bestBidPrice() >= bestAskPrice()) {
+            Order taker = pollFirstResting(bids);
+            all.addAll(matchLimit(taker));
+            if (taker.getRemainingQuantity() > 0) {
+                enqueue(taker); // 더 이상 교차하지 않는 잔량 → 재안착
+            }
+        }
+        return all;
+    }
+
+    /** book의 최우선 레벨에서 선두 주문 하나를 꺼낸다(인덱스에서도 제거). */
+    private Order pollFirstResting(TreeMap<Long, ArrayDeque<Order>> book) {
+        Map.Entry<Long, ArrayDeque<Order>> entry = book.firstEntry();
+        Order order = entry.getValue().poll();
+        if (entry.getValue().isEmpty()) book.remove(entry.getKey());
+        orderIndex.remove(order.getId());
+        return order;
+    }
+
+    /**
      * 주문을 취소한다. book에 없으면(이미 체결/취소) false 반환.
      */
     public boolean cancel(Long orderId) {

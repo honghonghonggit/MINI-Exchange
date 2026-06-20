@@ -7,6 +7,7 @@ import com.miniexchange.domain.EventLog;
 import com.miniexchange.domain.EventLog.EventType;
 import com.miniexchange.domain.Order;
 import com.miniexchange.engine.MatchResult;
+import com.miniexchange.engine.ViState;
 import com.miniexchange.repository.EventLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,15 @@ public class EventLogService {
             save(takerEvent, Map.of("orderId", r.takerOrder().getId(),
                     "remainingQuantity", r.takerOrder().getRemainingQuantity()));
         }
+    }
+
+    @Async("persistExecutor")
+    @Transactional
+    public void logVi(ViState state) {
+        save(state.halted() ? EventType.VI_TRIGGERED : EventType.VI_RELEASED, Map.of(
+                "referencePrice", state.referencePrice(),
+                "until", state.until()
+        ));
     }
 
     private void save(EventType type, Object payload) {

@@ -21,3 +21,9 @@ export interface Metrics {
   tps: number;
   openOrderCount: number;
 }
+
+export interface ViState {
+  halted: boolean;
+  referencePrice: number;
+  until: number;
+}

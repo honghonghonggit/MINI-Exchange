@@ -1,0 +1,32 @@
+.vi-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #7f1d1d, #b91c1c);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+}
+
+.vi-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fde047;
+  animation: vi-pulse 1s ease-in-out infinite;
+}
+
+.vi-countdown {
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+@keyframes vi-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}

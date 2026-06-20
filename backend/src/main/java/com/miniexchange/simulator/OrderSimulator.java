@@ -1,5 +1,7 @@
 package com.miniexchange.simulator;
 
+import com.miniexchange.domain.Order;
+import com.miniexchange.domain.OrderType;
 import com.miniexchange.engine.MatchingEngine;
 import com.miniexchange.engine.OrderBookSnapshot;
 import com.miniexchange.service.OrderService;
@@ -32,33 +34,38 @@ import java.util.random.RandomGenerator;
 @ConditionalOnProperty(name = "simulator.enabled", havingValue = "true", matchIfMissing = true)
 public class OrderSimulator {
 
-    private static final long BASE_PRICE   = 50_000L;
-    private static final long TICK_SIZE    = 100L;
-    private static final double VOLATILITY = 0.0005; // 기준가 랜덤워크 변동성 (0.05%)
-    private static final int PRICE_WINDOW  = 20;      // 추세/이동평균용 최근 체결가 개수
+    private static final long BASE_PRICE     = 50_000L;
+    private static final long TICK_SIZE      = 100L;
+    private static final double VOLATILITY   = 0.0005; // 기준가 랜덤워크 변동성 (0.05%)
+    private static final int PRICE_WINDOW    = 20;      // 추세/이동평균용 최근 체결가 개수
+    private static final int MAX_OPEN_ORDERS = 60;      // 오더북을 얇게 유지(메모리·변동성)
+    private static final int MAX_CANCELS_PER_TICK = 20;
 
     private final OrderService orderService;
     private final MatchingEngine engine;
     private final RandomGenerator rng = new Random();
 
     private final List<Trader> traders = List.of(
-            new NoiseTrader(),
+            new NoiseTrader(20, 5),        // ±1~20틱(±2%) → 먼 가격대에도 호가 존재
             new MomentumTrader(),
             new MeanReversionTrader(),
-            new LargeTrader()
+            new LargeTrader(4, 100, 150)   // 100~250주 대형 → 가끔 한쪽을 쓸어 급변동 유발
     );
 
-    /** 트레이더 → OrderService 위임 게이트웨이 (태그를 clientOrderId 접두사로 전달) */
+    /** 트레이더 → OrderService 위임 게이트웨이 (태그 전달 + 안착 주문 id 추적) */
     private final OrderGateway gateway;
 
     private final Deque<Long> recentPrices = new ArrayDeque<>();
+    private final Deque<Long> liveOrderIds = new ArrayDeque<>(); // 만료 취소용 안착 주문 id
     private long referencePrice = BASE_PRICE;
 
     public OrderSimulator(OrderService orderService, MatchingEngine engine) {
         this.orderService = orderService;
         this.engine = engine;
-        this.gateway = (side, type, price, qty, tag) ->
-                orderService.submitOrder(side, type, price, qty, tag);
+        this.gateway = (side, type, price, qty, tag) -> {
+            Order o = orderService.submitOrder(side, type, price, qty, tag);
+            if (type == OrderType.LIMIT) liveOrderIds.addLast(o.getId());
+        };
     }
 
     @Scheduled(fixedDelayString = "${simulator.interval-ms:500}")
@@ -68,8 +75,23 @@ public class OrderSimulator {
             for (Trader trader : traders) {
                 trader.act(view, gateway, rng);
             }
+            pruneOldOrders();
         } catch (Exception e) {
             log.warn("Simulator tick error: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 오더북이 상한을 넘으면 가장 오래된 안착 주문부터 취소해 책을 얇게 유지한다.
+     * 설계 결정: 실시장처럼 주문이 영원히 남지 않게 해 (1) 메모리/DB 무한 증가를 막고
+     * (2) 대형 주문이 가격을 실제로 움직일 수 있게(→ VI 발동 가능) 깊이를 제한한다.
+     */
+    private void pruneOldOrders() {
+        int attempts = 0;
+        while (engine.openOrderCount() > MAX_OPEN_ORDERS
+                && !liveOrderIds.isEmpty()
+                && attempts++ < MAX_CANCELS_PER_TICK) {
+            orderService.cancelOrder(liveOrderIds.pollFirst()); // 이미 체결/취소면 false → 무시
         }
     }
 

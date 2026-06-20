@@ -32,6 +32,8 @@ public class EventLog {
         ORDER_CANCELLED,
         ORDER_FILLED,
         ORDER_PARTIAL,
-        EXECUTION
+        EXECUTION,
+        VI_TRIGGERED,
+        VI_RELEASED
     }
 }
