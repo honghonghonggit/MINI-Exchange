@@ -14,6 +14,7 @@ export default defineConfig({
       '/trades':    'http://localhost:8080',
       '/metrics':   'http://localhost:8080',
       '/events':    'http://localhost:8080',
+      '/replay':    'http://localhost:8080',
       '/ws': {
         target: 'http://localhost:8080',
         changeOrigin: true,
