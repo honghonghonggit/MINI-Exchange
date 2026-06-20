@@ -26,6 +26,7 @@
 - 시스템 메트릭(매칭 레이턴시, TPS, 미체결 주문 수)을 화면에 노출하고, 1만/10만/50만 건 주문 처리 성능 테스트 결과를 README에 포함한다.
 - 코스콤/KRX가 "만든 시스템을 그대로 재현했다"는 단정적 표현은 쓰지 않는다.
 - 큰 설계 변경 전에는 plan mode로 먼저 합의받는다.
+- 커밋 메시지에 "Co-Authored-By: Claude" 등 AI attribution을 넣지 않는다. (settings.json `includeCoAuthoredBy: false`)
 
 ## DB 스키마 (초안)
 - orders: id, client_order_id, side, price, quantity, remaining_quantity, type, status, created_at, updated_at
