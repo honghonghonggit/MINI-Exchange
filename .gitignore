@@ -46,3 +46,6 @@ Thumbs.db
 ### 환경 변수 ###
 .env
 .env.local
+
+### Claude Code (로컬 권한/설정 — 공유 안 함) ###
+.claude/settings.local.json
