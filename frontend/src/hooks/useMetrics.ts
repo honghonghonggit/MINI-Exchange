@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Metrics } from '../types';
+import { API_BASE } from '../config';
 
 const POLL_INTERVAL = 1000;
 
@@ -13,7 +14,7 @@ export function useMetrics() {
 
   useEffect(() => {
     const fetchMetrics = () => {
-      fetch('/metrics')
+      fetch(`${API_BASE}/metrics`)
         .then(r => r.json())
         .then(setMetrics)
         .catch(() => {});

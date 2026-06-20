@@ -2,9 +2,10 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { API_BASE } from '../config';
 
-// 상대 경로 → dev는 vite 프록시, prod는 동일 오리진으로 백엔드 연결
-const WS_URL = '/ws';
+// API_BASE 비어있으면 '/ws'(dev: vite 프록시), 설정되면 절대 주소(예: https://api.onrender.com/ws)
+const WS_URL = `${API_BASE}/ws`;
 
 interface StompContextValue {
   client: Client | null;

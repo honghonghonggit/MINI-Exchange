@@ -1,0 +1,46 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# 백엔드(Docker Web Service) + 프론트엔드(Static Site) 분리 배포.
+# DB는 Render Postgres가 아니라 Neon(영구 무료)을 쓰므로 여기서 DB는 정의하지 않고,
+# 연결 문자열은 DATABASE_URL 환경변수로 주입한다(sync:false → 대시보드에서 수동 입력).
+
+services:
+  # ---- 백엔드: 매칭엔진 + REST + WebSocket ----
+  - type: web
+    name: mini-exchange-api
+    runtime: docker
+    repo: https://github.com/honghonghonggit/MINI-Exchange
+    branch: main
+    region: singapore            # 한국에서 가까운 free 리전
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /metrics    # 항상 200을 주는 가벼운 GET
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Neon JDBC 연결 문자열(자격증명 포함). 대시보드에서 직접 입력.
+      - key: DATABASE_URL
+        sync: false
+      # 컨테이너 메모리에 맞춘 힙 옵션(필요 시 조정)
+      - key: JAVA_OPTS
+        value: -XX:MaxRAMPercentage=75
+
+  # ---- 프론트엔드: Vite 정적 빌드 ----
+  - type: web
+    name: mini-exchange-web
+    runtime: static
+    repo: https://github.com/honghonghonggit/MINI-Exchange
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # 백엔드 배포 후 그 주소를 여기에 입력하고 재배포하면 빌드에 주입된다.
+      # 예) https://mini-exchange-api.onrender.com
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      # SPA: 모든 경로를 index.html로 (새로고침 404 방지)
+      - type: rewrite
+        source: /*
+        destination: /index.html

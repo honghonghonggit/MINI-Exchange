@@ -1,3 +1,7 @@
+# Render는 $PORT를 주입하고 그 포트로 바인딩되길 기대한다. 로컬은 8080.
+server:
+  port: ${PORT:8080}
+
 spring:
   application:
     name: mini-exchange
@@ -23,16 +27,21 @@ simulator:
   interval-ms: 500
 
 ---
-# prod 프로파일: PostgreSQL (배포 환경)
+# prod 프로파일: PostgreSQL/Neon (배포 환경)
 spring:
   config:
     activate:
       on-profile: prod
   datasource:
+    # DATABASE_URL 한 줄에 자격증명까지 포함된 Neon JDBC 연결 문자열을 받는다.
+    #   예) jdbc:postgresql://ep-xxx.ap-southeast-1.aws.neon.tech/neondb?user=OWNER&password=PW&sslmode=require
+    # 사용자/비밀번호를 URL에 안 넣고 싶으면 SPRING_DATASOURCE_USERNAME / _PASSWORD 환경변수로 분리해도 된다.
     url: ${DATABASE_URL}
     driver-class-name: org.postgresql.Driver
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:}
+    hikari:
+      # Neon free는 동시 연결 수가 제한적이라 풀을 작게 유지한다.
+      maximum-pool-size: 5
+      minimum-idle: 1
   jpa:
     hibernate:
       ddl-auto: update
