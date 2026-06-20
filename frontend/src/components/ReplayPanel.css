@@ -1,0 +1,44 @@
+.replay-panel {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+
+.replay-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.replay-btn:hover:not(:disabled) { background: #2ea043; }
+.replay-btn:disabled { opacity: 0.6; cursor: default; }
+
+.replay-result {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #c9d1d9;
+  line-height: 1.7;
+}
+
+.replay-result b { color: #fff; }
+
+.replay-ok {
+  margin-top: 4px;
+  color: #3fb950;
+  font-weight: 600;
+}
+
+.replay-diff {
+  margin-top: 4px;
+  color: #d29922;
+  font-weight: 600;
+}

@@ -3,6 +3,7 @@ import { TradeTape } from './components/TradeTape';
 import { PriceChart } from './components/PriceChart';
 import { MetricsPanel } from './components/MetricsPanel';
 import { ViBanner } from './components/ViBanner';
+import { ReplayPanel } from './components/ReplayPanel';
 import './App.css';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
           <TradeTape />
           <div className="main-col">
             <PriceChart />
+            <ReplayPanel />
           </div>
         </div>
       </main>
