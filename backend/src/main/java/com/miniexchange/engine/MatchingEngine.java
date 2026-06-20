@@ -128,10 +128,10 @@ public class MatchingEngine {
 
                 // VI 해제: cooldown 경과 시 쌓인 주문을 일괄 체결(uncross)
                 if (guard.halted() && now >= guard.haltUntil()) {
-                    List<MatchResult> uncross = orderBook.uncross();
+                    List<MatchResult> uncrossed = orderBook.uncross();
                     guard.release(lastTradePrice, now);
-                    log.info("VI 해제: 일괄체결 {}건, 기준가 {}", uncross.size(), guard.referencePrice());
-                    publishMatches(uncross);
+                    log.info("VI 해제: 일괄체결 {}건, 기준가 {}", uncrossed.size(), guard.referencePrice());
+                    publishResults(uncrossed);
                     onViStateChanged.accept(new ViState(false, guard.referencePrice(), 0L));
                 }
 
@@ -149,15 +149,11 @@ public class MatchingEngine {
                 totalLatencyNs.addAndGet(elapsed);
                 commandCount.increment();
 
-                lastSnapshot = orderBook.snapshot();
-                onOrderBookChanged.accept(lastSnapshot);
-
-                if (!results.isEmpty()) {
-                    matchCountInWindow.add(results.size());
-                    lastTradePrice = results.get(results.size() - 1).price();
-                    // 방금 트리거됐다면 기준가를 갱신하지 않는다(밴드가 재중심되어 정지가 무의미해짐 방지)
-                    if (!guard.halted()) guard.maybeUpdateReference(lastTradePrice, now);
-                    onMatch.accept(results);
+                publishResults(results);
+                // 정상 상태 체결이면 기준가(VI 밴드 중심)를 느린 앵커로 따라가게 한다.
+                // 방금 트리거됐다면 갱신하지 않는다(밴드가 재중심되어 정지가 무의미해짐 방지).
+                if (!results.isEmpty() && !guard.halted()) {
+                    guard.maybeUpdateReference(lastTradePrice, now);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -190,8 +186,11 @@ public class MatchingEngine {
         return results;
     }
 
-    /** uncross 등 큐 외부에서 발생한 체결을 스냅샷·체결 콜백으로 발행한다. */
-    private void publishMatches(List<MatchResult> results) {
+    /**
+     * 오더북 스냅샷을 항상 브로드캐스트하고, 체결이 있으면 메트릭·마지막 체결가를 갱신한 뒤
+     * 체결 콜백을 호출한다. 일반 명령 처리와 VI 해제 시 uncross가 공유하는 발행 경로.
+     */
+    private void publishResults(List<MatchResult> results) {
         lastSnapshot = orderBook.snapshot();
         onOrderBookChanged.accept(lastSnapshot);
         if (!results.isEmpty()) {
