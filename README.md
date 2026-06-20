@@ -121,6 +121,25 @@ public OrderBookSnapshot snapshot() { return lastSnapshot; }
 
 orders와 executions를 합치면 단순해지지만, "이 주문이 몇 번에 나눠 체결됐나"를 추적하려면 별도 테이블이 필수. Phase 2의 이벤트 리플레이도 executions가 분리되어야 가능.
 
+### 6. 시뮬레이터: 단일 랜덤워크 → 다중 트레이더 전략 (Phase 3)
+
+초기 시뮬레이터는 기준가를 가우시안 랜덤워크로 움직이는 단일 로직이라 가격이 무방향으로 진동만 했다. Phase 3에서 **무상태 전략 객체(`Trader`) 조합**으로 재구조화했다.
+
+| 트레이더 | 행동 | 시장에 미치는 효과 |
+|---|---|---|
+| `NoiseTrader` | 기준가 ±틱에 양면 limit | 유동성·호가 depth 공급 |
+| `MomentumTrader` | 최근 추세 방향으로 시장가 추격 | 추세 증폭 → 급변동 유발 |
+| `MeanReversionTrader` | 이동평균 대비 ±band 벗어나면 반대 베팅 | 가격을 평균으로 되돌림 |
+| `LargeTrader` | 낮은 확률로 여러 레벨 휩쓰는 대형 시장가 | 순간 가격 점프(고래) |
+
+**설계 결정**:
+- 트레이더는 `MatchingEngine`을 직접 보지 않고 **읽기 전용 `MarketView`(불변 record)만** 받는다 → 전략 로직을 순수 함수처럼 시드 고정 RNG로 단위 테스트(`TraderStrategyTest`).
+- 주문 출구를 `OrderGateway` 인터페이스로 분리 → 테스트에서 호출을 캡처하는 가짜 구현 주입.
+- 엔진은 `lastTradePrice`(volatile)만 노출하고, 시뮬레이터가 이를 읽어 기준가를 실제 체결가로 수렴시킴 → 모멘텀/평균회귀가 **자기 체결 결과에 반응**하는 피드백 루프 형성.
+- 각 주문의 `clientOrderId`에 트레이더 태그(`MOMENTUM-…` 등)를 붙여 스키마 변경 없이 이벤트 로그에서 출처를 식별.
+
+모멘텀+대형 트레이더가 만드는 급변동은 다음 단계(VI 변동성완화장치)의 트리거 재료가 된다.
+
 ---
 
 ## 기술 스택

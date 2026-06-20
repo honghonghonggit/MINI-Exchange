@@ -28,9 +28,18 @@ public class OrderService {
     private final EventLogService eventLogService;
 
     public Order submitOrder(OrderSide side, OrderType type, long price, long quantity) {
+        return submitOrder(side, type, price, quantity, null);
+    }
+
+    /**
+     * 태그 포함 주문 제출. tag는 clientOrderId 접두사로 들어가
+     * 이벤트 로그/주문 원장에서 출처(예: 트레이더 유형)를 식별할 수 있게 한다.
+     */
+    public Order submitOrder(OrderSide side, OrderType type, long price, long quantity, String tag) {
         LocalDateTime now = LocalDateTime.now();
+        String clientOrderId = (tag == null ? "" : tag + "-") + UUID.randomUUID();
         Order order = Order.builder()
-                .clientOrderId(UUID.randomUUID().toString())
+                .clientOrderId(clientOrderId)
                 .side(side)
                 .type(type)
                 .price(price)

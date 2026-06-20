@@ -29,6 +29,7 @@ public class MatchingEngine {
     private final Thread matchingThread;
 
     private volatile OrderBookSnapshot lastSnapshot = new OrderBookSnapshot(List.of(), List.of());
+    private volatile long lastTradePrice = 0L;
 
     // 메트릭 (단위: nanoseconds)
     private final AtomicLong lastLatencyNs = new AtomicLong(0);
@@ -59,6 +60,11 @@ public class MatchingEngine {
 
     public OrderBookSnapshot snapshot() {
         return lastSnapshot;
+    }
+
+    /** 마지막 체결가 (0 = 아직 체결 없음). 시뮬레이터 트레이더가 시장을 읽는 데 사용. */
+    public long lastTradePrice() {
+        return lastTradePrice;
     }
 
     public void stop() {
@@ -119,6 +125,7 @@ public class MatchingEngine {
 
                 if (!results.isEmpty()) {
                     matchCountInWindow.add(results.size());
+                    lastTradePrice = results.get(results.size() - 1).price();
                     onMatch.accept(results);
                 }
             } catch (InterruptedException e) {

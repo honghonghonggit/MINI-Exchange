@@ -1,88 +1,108 @@
 package com.miniexchange.simulator;
 
-import com.miniexchange.domain.OrderSide;
-import com.miniexchange.domain.OrderType;
+import com.miniexchange.engine.MatchingEngine;
+import com.miniexchange.engine.OrderBookSnapshot;
 import com.miniexchange.service.OrderService;
-import lombok.RequiredArgsConstructor;
+import com.miniexchange.simulator.trader.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 import java.util.Random;
 import java.util.random.RandomGenerator;
 
 /**
- * 랜덤워크 기반 가상 주문 생성기.
- * 설계 결정:
- *   - 기준가(referencePrice)가 가우시안 랜덤워크로 움직임 → 자연스러운 가격 변동
- *   - limit/market 주문을 9:1 비율로 섞어 체결이 꾸준히 발생하게 유지
- *   - 매수/매도 주문을 균등하게 생성해 오더북이 한쪽으로 쏠리지 않게 함
- *   - simulator.enabled=false 로 비활성화 가능 (테스트 환경 등)
+ * 다중 전략 가상 주문 생성기.
+ * 설계 결정 (Phase 3):
+ *   - 단일 랜덤워크 → 여러 트레이더 전략(노이즈·모멘텀·평균회귀·대형)의 조합으로 확장.
+ *   - 매 tick 공유 시장상태(기준가 앵커 + 최근 체결가 윈도우)를 갱신하고,
+ *     읽기 전용 MarketView를 만들어 각 트레이더에게 전달 → 트레이더는 무상태 전략으로 분리.
+ *   - 기준가는 느린 가우시안 랜덤워크로 떠다니되, 실제 체결가가 있으면 그쪽으로 끌어당겨
+ *     시장이 자기 체결 결과에 반응하게 한다(모멘텀/평균회귀가 반응할 실제 신호 제공).
+ *   - simulator.enabled=false 로 비활성화 가능 (테스트 환경 등).
  */
 @Slf4j
 @Component
 @EnableScheduling
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "simulator.enabled", havingValue = "true", matchIfMissing = true)
 public class OrderSimulator {
 
-    private static final long BASE_PRICE    = 50_000L;  // 기준 시작가
-    private static final long TICK_SIZE     = 100L;     // 최소 호가 단위
-    private static final double VOLATILITY  = 0.0005;   // 랜덤워크 변동성 (0.05%)
-    private static final int    MARKET_RATE = 10;       // 10회 중 1회 market 주문
+    private static final long BASE_PRICE   = 50_000L;
+    private static final long TICK_SIZE    = 100L;
+    private static final double VOLATILITY = 0.0005; // 기준가 랜덤워크 변동성 (0.05%)
+    private static final int PRICE_WINDOW  = 20;      // 추세/이동평균용 최근 체결가 개수
 
     private final OrderService orderService;
+    private final MatchingEngine engine;
     private final RandomGenerator rng = new Random();
 
+    private final List<Trader> traders = List.of(
+            new NoiseTrader(),
+            new MomentumTrader(),
+            new MeanReversionTrader(),
+            new LargeTrader()
+    );
+
+    /** 트레이더 → OrderService 위임 게이트웨이 (태그를 clientOrderId 접두사로 전달) */
+    private final OrderGateway gateway;
+
+    private final Deque<Long> recentPrices = new ArrayDeque<>();
     private long referencePrice = BASE_PRICE;
-    private int tickCount = 0;
+
+    public OrderSimulator(OrderService orderService, MatchingEngine engine) {
+        this.orderService = orderService;
+        this.engine = engine;
+        this.gateway = (side, type, price, qty, tag) ->
+                orderService.submitOrder(side, type, price, qty, tag);
+    }
 
     @Scheduled(fixedDelayString = "${simulator.interval-ms:500}")
     public void tick() {
         try {
-            updateReferencePrice();
-            submitLimitOrders();
-
-            // market 주문으로 체결 촉진
-            if (++tickCount % MARKET_RATE == 0) {
-                submitMarketOrder();
+            MarketView view = buildMarketView();
+            for (Trader trader : traders) {
+                trader.act(view, gateway, rng);
             }
         } catch (Exception e) {
             log.warn("Simulator tick error: {}", e.getMessage());
         }
     }
 
-    /** 가우시안 랜덤워크로 기준가 갱신 */
-    private void updateReferencePrice() {
+    /** 공유 시장상태를 갱신하고 트레이더에게 줄 읽기 전용 뷰를 만든다. */
+    private MarketView buildMarketView() {
+        long lastTrade = engine.lastTradePrice();
+        if (lastTrade > 0) recordPrice(lastTrade);
+        updateReferencePrice(lastTrade);
+
+        OrderBookSnapshot snap = engine.snapshot();
+        Long bestBid = snap.bids().isEmpty() ? null : snap.bids().get(0).price();
+        Long bestAsk = snap.asks().isEmpty() ? null : snap.asks().get(0).price();
+
+        return new MarketView(bestBid, bestAsk, lastTrade, referencePrice, List.copyOf(recentPrices));
+    }
+
+    /** 기준가: 가우시안 랜덤워크로 떠다니되 실제 체결가 쪽으로 절반 끌어당김. */
+    private void updateReferencePrice(long lastTrade) {
         double drift = rng.nextGaussian() * VOLATILITY * referencePrice;
-        referencePrice = Math.max(TICK_SIZE, referencePrice + roundToTick((long) drift));
+        long next = referencePrice + roundToTick((long) drift);
+        if (lastTrade > 0) {
+            next = (next + lastTrade) / 2; // 체결가에 수렴
+        }
+        referencePrice = Math.max(TICK_SIZE, roundToTick(next));
     }
 
-    /** 기준가 ±1~5틱 범위에 limit 매수/매도 각 1건 */
-    private void submitLimitOrders() {
-        long spread = (1 + rng.nextInt(3)) * TICK_SIZE;
-        long qty    = 1 + rng.nextInt(5);
-
-        // 매도: 기준가 위
-        long askPrice = roundToTick(referencePrice + spread);
-        orderService.submitOrder(OrderSide.SELL, OrderType.LIMIT, askPrice, qty);
-
-        // 매수: 기준가 아래
-        long bidPrice = roundToTick(referencePrice - spread);
-        orderService.submitOrder(OrderSide.BUY, OrderType.LIMIT, bidPrice, qty);
-    }
-
-    /** 시장가 주문으로 기존 잔량을 체결 */
-    private void submitMarketOrder() {
-        long qty  = 1 + rng.nextInt(3);
-        OrderSide side = rng.nextBoolean() ? OrderSide.BUY : OrderSide.SELL;
-        orderService.submitOrder(side, OrderType.MARKET, 0L, qty);
-        log.debug("Market {} qty={}", side, qty);
+    private void recordPrice(long price) {
+        if (!recentPrices.isEmpty() && recentPrices.peekLast() == price) return; // 동일가 중복 제거
+        recentPrices.addLast(price);
+        while (recentPrices.size() > PRICE_WINDOW) recentPrices.pollFirst();
     }
 
     private long roundToTick(long price) {
-        return Math.max(TICK_SIZE, (price / TICK_SIZE) * TICK_SIZE);
+        return (price / TICK_SIZE) * TICK_SIZE;
     }
 }
