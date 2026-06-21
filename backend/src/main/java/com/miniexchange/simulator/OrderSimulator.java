@@ -36,7 +36,7 @@ public class OrderSimulator {
 
     private static final long BASE_PRICE     = 50_000L;
     private static final long TICK_SIZE      = 100L;
-    private static final double VOLATILITY   = 0.0005; // 기준가 랜덤워크 변동성 (0.05%)
+    private static final double VOLATILITY   = 0.0015; // 기준가 랜덤워크 변동성 (0.15%/tick)
     private static final int PRICE_WINDOW    = 20;      // 추세/이동평균용 최근 체결가 개수
     private static final int MAX_OPEN_ORDERS = 60;      // 오더북을 얇게 유지(메모리·변동성)
     private static final int MAX_CANCELS_PER_TICK = 20;
@@ -108,23 +108,25 @@ public class OrderSimulator {
         return new MarketView(bestBid, bestAsk, lastTrade, referencePrice, List.copyOf(recentPrices));
     }
 
-    /** 기준가: 가우시안 랜덤워크로 떠다니되 실제 체결가 쪽으로 절반 끌어당김. */
+    /**
+     * 기준가: 가우시안 랜덤워크로 떠다니되 실제 체결가 쪽으로 약하게 끌어당긴다.
+     * 설계 결정: 드리프트를 틱으로 내림(roundToTick)하면 한 걸음(±0.15%≈75원)이 1틱(100원)보다
+     *   작아 거의 항상 0으로 사라져 가격이 고정된다 → 드리프트는 누적시키고(틱 정렬은 트레이더가
+     *   주문 낼 때 수행) 기준가 자체는 틱에 맞추지 않는다. 체결가 수렴 가중치도 0.5→0.25로 낮춰
+     *   추세가 한두 tick에 곧바로 평탄화되지 않고 살아남게 한다.
+     */
     private void updateReferencePrice(long lastTrade) {
         double drift = rng.nextGaussian() * VOLATILITY * referencePrice;
-        long next = referencePrice + roundToTick((long) drift);
+        long next = referencePrice + Math.round(drift);
         if (lastTrade > 0) {
-            next = (next + lastTrade) / 2; // 체결가에 수렴
+            next = Math.round(next * 0.75 + lastTrade * 0.25); // 체결가에 약하게 수렴
         }
-        referencePrice = Math.max(TICK_SIZE, roundToTick(next));
+        referencePrice = Math.max(TICK_SIZE, next);
     }
 
     private void recordPrice(long price) {
         if (!recentPrices.isEmpty() && recentPrices.peekLast() == price) return; // 동일가 중복 제거
         recentPrices.addLast(price);
         while (recentPrices.size() > PRICE_WINDOW) recentPrices.pollFirst();
-    }
-
-    private long roundToTick(long price) {
-        return (price / TICK_SIZE) * TICK_SIZE;
     }
 }

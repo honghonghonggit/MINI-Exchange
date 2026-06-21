@@ -37,7 +37,7 @@ export function ReplayPanel() {
     <div className="replay-panel">
       <div className="panel-title">이벤트 리플레이</div>
       <button className="replay-btn" onClick={runReplay} disabled={loading}>
-        {loading ? '재생 중…' : '기록된 이벤트 재생'}
+        {loading ? '재생 중…' : '최근 이벤트 재생'}
       </button>
       {result && (
         <div className="replay-result">
@@ -49,7 +49,7 @@ export function ReplayPanel() {
           <div className={result.matched ? 'replay-ok' : 'replay-diff'}>
             {result.matched
               ? '✓ 원본과 일치 — 이벤트 로그만으로 체결을 결정적으로 복원'
-              : `△ 원본(VI 적용)과 ${Math.abs(result.regeneratedExecutions - result.recordedExecutions)}건 차이 — VI 거래정지가 체결 흐름을 바꾼 결과`}
+              : `△ 원본과 ${Math.abs(result.regeneratedExecutions - result.recordedExecutions)}건 차이 — VI 거래정지·윈도우 경계 효과로 일부 체결이 다르게 재구성됨`}
           </div>
         </div>
       )}

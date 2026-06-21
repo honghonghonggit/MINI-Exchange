@@ -15,7 +15,7 @@ export function PriceChart() {
     if (trades.length === 0) return;
     const point: PricePoint = {
       time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      price: trades[0].price,
+      price: trades[trades.length - 1].price, // 한 배치의 마지막(가장 최근) 체결가
     };
     setData(prev => [...prev, point].slice(-MAX_POINTS));
   });
