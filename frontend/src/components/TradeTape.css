@@ -1,6 +1,6 @@
 .trade-tape {
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
   width: 220px;
@@ -12,10 +12,11 @@
 .tape-header {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
   padding: 4px 0 8px;
-  border-bottom: 1px solid #21262d;
+  border-bottom: 1px solid var(--border-soft);
   margin-bottom: 4px;
 }
 
@@ -27,23 +28,24 @@
 .tape-row {
   display: flex;
   justify-content: space-between;
-  padding: 3px 0;
-  font-size: 13px;
+  padding: 4px 0;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
   animation: fadeIn 0.3s ease;
 }
 
 .tape-price {
-  color: #e6edf3;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .tape-qty {
-  color: #8b949e;
+  color: var(--text-3);
 }
 
 .tape-empty {
-  color: #6b7280;
-  font-size: 12px;
+  color: var(--text-3);
+  font-size: 13px;
   margin-top: 12px;
   text-align: center;
 }

@@ -1,32 +1,34 @@
 .ob-container {
   width: 320px;
-  background: #1a1a2e;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-family: var(--mono);
+  font-size: 14px;
 }
 
 .ob-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  background: #16213e;
-  border-bottom: 1px solid #0f3460;
+  padding: 11px 16px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .ob-title {
-  color: #e0e0e0;
-  font-weight: bold;
-  font-size: 14px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .ob-status {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
 }
-.ob-status.connected    { color: #4ade80; }
-.ob-status.disconnected { color: #9ca3af; }
+.ob-status.connected    { color: var(--green); }
+.ob-status.disconnected { color: var(--text-3); }
 
 .ob-table {
   width: 100%;
@@ -34,35 +36,37 @@
 }
 
 .ob-table thead th {
-  padding: 6px 12px;
-  color: #6b7280;
-  font-weight: normal;
-  font-size: 11px;
+  padding: 7px 12px;
+  color: var(--text-3);
+  font-weight: 600;
+  font-size: 12px;
   text-align: right;
-  background: #16213e;
+  background: var(--panel-2);
 }
 .ob-table thead th:last-child { text-align: center; }
 
 .ob-table td {
-  padding: 4px 12px;
+  padding: 5px 12px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.ask-row { background: rgba(239, 68, 68, 0.06); }
-.bid-row { background: rgba(34, 197, 94, 0.06); }
+.ask-row { background: var(--red-bg); }
+.bid-row { background: var(--green-bg); }
 
-.ask-price { color: #ef4444; font-weight: 600; }
-.bid-price { color: #22c55e; font-weight: 600; }
+.ask-price { color: var(--red); font-weight: 700; }
+.bid-price { color: var(--green); font-weight: 700; }
 
-.qty { color: #d1d5db; }
-.cnt { color: #6b7280; text-align: center; }
+.qty { color: var(--text-2); }
+.cnt { color: var(--text-3); text-align: center; }
 
 .spread-row td {
   text-align: center;
-  padding: 6px;
-  color: #9ca3af;
-  font-size: 11px;
-  background: #16213e;
-  border-top: 1px solid #0f3460;
-  border-bottom: 1px solid #0f3460;
+  padding: 7px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--panel-2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }

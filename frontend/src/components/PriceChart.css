@@ -1,15 +1,33 @@
 .price-chart {
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
   width: 100%;
 }
 
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.chart-head .panel-title {
+  margin-bottom: 0;
+}
+
+.chart-last {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+}
+
 .chart-empty {
-  color: #6b7280;
-  font-size: 12px;
-  height: 180px;
+  color: var(--text-3);
+  font-size: 13px;
+  height: 500px;
   display: flex;
   align-items: center;
   justify-content: center;

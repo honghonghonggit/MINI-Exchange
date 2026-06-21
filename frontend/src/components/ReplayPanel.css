@@ -1,21 +1,21 @@
 .replay-panel {
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   margin-top: 12px;
 }
 
 .replay-btn {
   margin-top: 8px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 9px 12px;
   background: #238636;
   color: #fff;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -24,21 +24,21 @@
 
 .replay-result {
   margin-top: 10px;
-  font-size: 13px;
-  color: #c9d1d9;
+  font-size: 14px;
+  color: var(--text-2);
   line-height: 1.7;
 }
 
-.replay-result b { color: #fff; }
+.replay-result b { color: var(--text); font-weight: 700; }
 
 .replay-ok {
   margin-top: 4px;
-  color: #3fb950;
-  font-weight: 600;
+  color: var(--green);
+  font-weight: 700;
 }
 
 .replay-diff {
   margin-top: 4px;
-  color: #d29922;
-  font-weight: 600;
+  color: var(--amber);
+  font-weight: 700;
 }
