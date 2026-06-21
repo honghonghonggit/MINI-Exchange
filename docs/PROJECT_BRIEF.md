@@ -8,7 +8,7 @@
 React(프론트엔드) ↔ REST/WebSocket ↔ Spring Boot(API 서버) → 매칭엔진(오더북, 인메모리) → PostgreSQL(주문/체결/이벤트 영속화)
 
 ## 기술 스택
-- Backend: Java 21, Spring Boot, Spring WebSocket, JPA, PostgreSQL
+- Backend: Java 17, Spring Boot, Spring WebSocket, JPA, PostgreSQL
 - Frontend: React, TypeScript, Vite, Recharts
 - Infra: Docker, GitHub Actions, Render 또는 Railway
 - Redis는 필수 아님 — 다중 인스턴스로 확장할 때만 고려할 Phase3급 옵션

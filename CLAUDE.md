@@ -4,7 +4,7 @@
 전체 기획/스코프/스택은 @docs/PROJECT_BRIEF.md 참고.
 
 ## 기술 스택
-- Backend: Java 21, Spring Boot, Spring WebSocket, JPA, PostgreSQL (Redis는 필수 아님, Phase3에서 다중 인스턴스 확장 시에만 고려)
+- Backend: Java 17, Spring Boot, Spring WebSocket, JPA, PostgreSQL (Redis는 필수 아님, Phase3에서 다중 인스턴스 확장 시에만 고려)
 - Frontend: React, TypeScript, Vite, Recharts
 - Infra: Docker, GitHub Actions, Render 또는 Railway
 
